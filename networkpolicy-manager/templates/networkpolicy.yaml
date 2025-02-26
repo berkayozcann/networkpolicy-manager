@@ -1,0 +1,51 @@
+{{- range .Values.namespaces }}
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ .name }}-network-policy
+  namespace: {{ .name }}
+spec:
+  podSelector:
+    {{- if .networkPolicy.podSelector }}
+    {{ toYaml .networkPolicy.podSelector | nindent 4 }}
+    {{- else }}
+    matchLabels: {}  # Default: applies to all pods in the namespace
+    {{- end }}
+  policyTypes:
+    - Ingress
+    - Egress
+  {{- if .networkPolicy.ingressRules }}
+  ingress:
+    {{- range .networkPolicy.ingressRules }}
+    - from:
+        {{- range .from }}
+        - {{ toYaml . | nindent 10 }}
+        {{- end }}
+      {{- if .ports }}
+      ports:
+        {{- range .ports }}
+        - protocol: {{ .protocol | default "TCP" }}
+          port: {{ .port }}
+        {{- end }}
+      {{- end }}
+    {{- end }}
+  {{- end }}
+  {{- if .networkPolicy.egressRules }}
+  egress:
+    {{- range .networkPolicy.egressRules }}
+    - to:
+        {{- range .to }}
+        - {{ toYaml . | nindent 10 }}
+        {{- end }}
+      {{- if .ports }}
+      ports:
+        {{- range .ports }}
+        - protocol: {{ .protocol | default "TCP" }}
+          port: {{ .port }}
+        {{- end }}
+      {{- end }}
+    {{- end }}
+  {{- end }}
+---
+{{- end }}
+
